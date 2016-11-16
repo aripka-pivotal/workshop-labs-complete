@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 
 @RestController
 public class HelloController {
@@ -43,7 +44,7 @@ public class HelloController {
 	}
 
 	@RequestMapping("/fortune")
-	@HystrixCommand(fallbackMethod="getDefaultFortune")
+	@HystrixCommand(fallbackMethod="getDefaultFortune", commandProperties={@HystrixProperty(name="circuitBreaker.requestVolumeThreshold", value="4")})
 	public String getFortune() throws Exception {
 		URI fortuneURI = getServiceUrl();
 		String fortuneURIFull = fortuneURI + "/random";
