@@ -14,18 +14,19 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
 @RestController
 public class HelloController {
 
 	private final AtomicInteger counter = new AtomicInteger();
-	
+
 	@Value("${hello.configMessage:No Config Message}")
 	private String configMessage;
 
 	@Autowired
-    private DiscoveryClient discoveryClient;
-	
+	private DiscoveryClient discoveryClient;
+
 	@RequestMapping("/")
 	public String index() {
 		return "Greetings from Omaha Spring Boot Starter App!";
@@ -35,31 +36,35 @@ public class HelloController {
 	public @ResponseBody Greeting sayHello(@RequestParam(value = "name", defaultValue = "Stranger") String name) {
 		return new Greeting(counter.incrementAndGet(), "Hello, " + name);
 	}
-	
+
 	@RequestMapping(value = "/hello-config")
-	public String helloConfig(){
+	public String helloConfig() {
 		return configMessage;
 	}
-	
 
-    @RequestMapping("/fortune")
-    public String getFortune() throws Exception {
-    	URI fortuneURI = getServiceUrl();
-    	String fortuneURIFull = fortuneURI + "/random";
-    	RestTemplate restTemplate = new RestTemplate();
-    	
-    	//Note we are cheating by not mapping to a local Object
-    	String fortune = restTemplate.getForObject(fortuneURIFull, String.class);
- 
-        return fortune;
-    }    
-    
-    public URI getServiceUrl() throws Exception {    	
-        List<ServiceInstance> list = discoveryClient.getInstances("fortunes");
-        if (list == null || list.size() == 0 ) {
-            throw new Exception("No service instances found!");
-        }
-        return list.get(0).getUri();
-    }
+	@RequestMapping("/fortune")
+	@HystrixCommand(fallbackMethod="getDefaultFortune")
+	public String getFortune() throws Exception {
+		URI fortuneURI = getServiceUrl();
+		String fortuneURIFull = fortuneURI + "/random";
+		RestTemplate restTemplate = new RestTemplate();
+
+		// Note we are cheating by not mapping to a local Object
+		String fortune = restTemplate.getForObject(fortuneURIFull, String.class);
+
+		return fortune;
+	}
+
+	public URI getServiceUrl() throws Exception {
+		List<ServiceInstance> list = discoveryClient.getInstances("fortunes");
+		if (list == null || list.size() == 0) {
+			throw new Exception("No service instances found!");
+		}
+		return list.get(0).getUri();
+	}
+
+	public String getDefaultFortune() {
+		return "Things not looking so great!";
+	}
 
 }
