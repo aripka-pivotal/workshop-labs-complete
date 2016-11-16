@@ -2,3 +2,10 @@ server:
   port: 9000
 management:
   port: 9001
+spring:
+  application:
+    name: omaha
+  cloud:
+    config:
+      uri: http://localhost:8888 
+  
